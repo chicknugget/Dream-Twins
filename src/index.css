@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background: #191f1f;
+  overflow: hidden;
+}
+
+@font-face {
+  font-family: 'EfcoBrookshire';
+  src: url('fonts/EFCO Brookshire Regular.ttf') format('truetype');
+}
