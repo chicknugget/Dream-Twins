@@ -1,13 +1,19 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from sentence_transformers import SentenceTransformer
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
+limiter = Limiter(key_func=get_remote_address)
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 engine = create_engine("postgresql://postgres:22feb2022@localhost:5432/dream_world")
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,14 +28,16 @@ class DreamEntry(BaseModel):
     dream_text: str
 
 @app.post("/connect-dream")
-async def connect_dream(entry: DreamEntry):
+@limiter.limit("5/minute")
+async def connect_dream(request: Request, entry: DreamEntry):
     embedding = model.encode(entry.dream_text).tolist()
 
     with engine.connect() as conn:
         search_query = text("""
-            SELECT author_name, country, content FROM dream 
-            ORDER BY embedding <=> :embedding 
-            LIMIT 1
+            SELECT author_name, country, content, ROUND(CAST((1-(embedding <=> :embedding)) * 100 AS numeric), 1) AS score
+                            FROM dream 
+                            ORDER BY embedding <=> :embedding 
+                            LIMIT 1
         """)
         match = conn.execute(search_query, {"embedding": str(embedding)}).fetchone()
         
@@ -46,11 +54,12 @@ async def connect_dream(entry: DreamEntry):
         conn.commit()
 
     if match:
-        m_name, m_country, m_content = match
+        m_name, m_country, m_content, m_score = match
         return {
             "status": "connected",
             "message": f"{m_name} from {m_country} had a similar dream:",
-            "match_text": m_content
+            "match_text": m_content,
+            "score": float(m_score)
         }
     else:
         return {"status": "first", "message": "You are the first dreamer in the database!"}
