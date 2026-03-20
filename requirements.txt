@@ -4,3 +4,4 @@ sqlalchemy
 sentence-transformers
 psycopg2-binary
 slowapi
+python-dotenv
