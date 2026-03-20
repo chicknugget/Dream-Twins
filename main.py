@@ -11,11 +11,12 @@ from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 
 load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 limiter = Limiter(key_func=get_remote_address)
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-engine = create_engine(os.getenv("DATABASE_URL"))
+engine = create_engine(DATABASE_URL, echo=True)
 app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
