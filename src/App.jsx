@@ -75,7 +75,7 @@ const App = () => {
     e.preventDefault();
     setIsSearching(true);
     try {
-      const res = await axios.post('http://127.0.0.1:8000/connect-dream', formData);
+      const res = await axios.post('https://dream-twins.onrender.com/connect-dream', formData);
       console.log(res.data);
       setTimeout(() => {
         setResult(res.data);
