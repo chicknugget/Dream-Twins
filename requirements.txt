@@ -1,4 +1,6 @@
 fastapi
-pydantic
+uvicorn
 sqlalchemy
-sentence_transformers
+sentence-transformers
+psycopg2-binary
+slowapi
